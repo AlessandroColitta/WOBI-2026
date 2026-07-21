@@ -64,15 +64,15 @@
 <body>
 
 <div class="container">
-    <h1>Sleep Evaluation Center</h1>
-    <p class="intro-text">The data collected is <strong>completely anonymous</strong> and is used exclusively to generate aggregate statistics on this device.</p>
+    <h1>World Business Forum 2026 - Sleep Quality Check</h1>
+    <p class="intro-text">Is your sleep portfolio underperforming? Let's check if your nightly metrics are in the green.<br><br>The collected data is completely anonymous.</p>
 
     <!-- SELECTION SCREEN -->
     <div id="selection-screen">
         <h2>Choose the questionnaire to fill out:</h2>
         <div class="selection-menu">
-            <button class="btn-large" onclick="startForm('ISI')">Insomnia Severity Index (ISI) Only</button>
-            <button class="btn-large" onclick="startForm('PSQI')">Pittsburgh Sleep Quality Index (PSQI) Only</button>
+            <button class="btn-large" onclick="startForm('ISI')">Insomnia Severity Index (ISI)</button>
+            <button class="btn-large" onclick="startForm('PSQI')">Pittsburgh Sleep Quality Index (PSQI)</button>
             <button class="btn-large" onclick="startForm('BOTH')" style="background-color: #17a2b8;">Complete Both Questionnaires</button>
         </div>
     </div>
@@ -197,7 +197,7 @@
 </div>
 
 <script>
-    // Register custom plugin for drawing the vertical magenta line
+    // Register custom plugin for drawing the vertical magenta line for density plot
     Chart.register({
         id: 'verticalLine',
         afterDraw: function(chart) {
@@ -348,25 +348,75 @@
         let msgBox = document.getElementById('clinical-message');
         if (problem) {
             msgBox.className = "alert-box alert-warning";
-            msgBox.innerHTML = "<strong>Attention:</strong> Your results indicate that you may suffer from sleep disturbances that are altering the quality of your rest. <br><br><em>We suggest consulting a sleep medicine specialist for further evaluation and to discover options for improving your sleep health.</em>";
+            msgBox.innerHTML = "<strong>Attention:</strong> Your results indicate that you may suffer from sleep disturbances that are altering the quality of your rest. <br><br><em>Consult a sleep medicine specialist for further evaluation.</em>";
         } else {
             msgBox.className = "alert-box alert-success";
-            msgBox.innerHTML = "Great! Your results do not indicate significant clinical sleep problems. Keep up your good sleep habits.";
+            msgBox.innerHTML = "Great! Keep up your good sleep habits.";
         }
 
         // Draw Charts
         if (isi !== null) {
             document.getElementById('isi-chart-container').style.display = 'block';
             let data = JSON.parse(localStorage.getItem('wobi_isi_history')) || [];
-            drawDensityPlot('isiCanvas', data, isi, 'ISI Score Distribution (Attendees)', false, 0, 28);
+            
+            // Bar Chart for ISI
+            drawBarChart('isiCanvas', data, isi, 'ISI Score Distribution (Attendees)', 
+                           [{m:7, l:'0-7 (None)'}, {m:14, l:'8-14 (Mild)'}, {m:21, l:'15-21 (Moderate)'}, {m:28, l:'22-28 (Severe)'}]);
         }
         if (psqi !== null) {
             document.getElementById('psqi-chart-container').style.display = 'block';
             let data = JSON.parse(localStorage.getItem('wobi_psqi_history')) || [];
+            
+            // Density Plot for PSQI
             drawDensityPlot('psqiCanvas', data, psqi, 'PSQI Score Distribution (Attendees)', 5, 0, 21);
         }
     }
 
+    // Function 1: Bar Chart (for ISI)
+    function drawBarChart(canvasId, dataset, currentScore, title, bins) {
+        let freqs = new Array(bins.length).fill(0);
+        let myIndex = -1;
+
+        // Group data points into predefined bins
+        dataset.forEach(score => {
+            for(let i=0; i<bins.length; i++) {
+                if (score <= bins[i].m) { freqs[i]++; break; }
+            }
+        });
+
+        // Find current user's bucket
+        for(let i=0; i<bins.length; i++) {
+            if (currentScore <= bins[i].m) { myIndex = i; break; }
+        }
+
+        // Color the current user's bar in Red
+        let colors = freqs.map((_, i) => i === myIndex ? '#e74c3c' : '#0056b3');
+
+        new Chart(document.getElementById(canvasId).getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: bins.map(b => b.l),
+                datasets: [{
+                    label: 'Number of Attendees',
+                    data: freqs,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: title + ' (You are in RED)', font: {size: 16} },
+                    legend: { display: false } // Bar chart doesn't need legend since title clarifies RED
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
+
+    // Function 2: Density Plot (for PSQI)
     function drawDensityPlot(canvasId, dataset, currentScore, title, cutoff, minRange, maxRange) {
         // Fallback for the first participant so the chart isn't empty
         let dataPoints = dataset.length > 0 ? dataset : [currentScore]; 
@@ -384,7 +434,7 @@
             data: {
                 datasets: [
                     {
-                        label: 'Population Density',
+                        label: 'Population Distribution',
                         data: kdeData,
                         fill: true,
                         backgroundColor: 'rgba(0, 86, 179, 0.4)',
@@ -393,7 +443,7 @@
                         pointRadius: 0
                     },
                     {
-                        label: 'You (Current Score)',
+                        label: 'You',
                         data: [{x: currentScore, y: userY}],
                         backgroundColor: '#e74c3c',
                         borderColor: '#ffffff',
@@ -408,7 +458,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     title: { display: true, text: title, font: {size: 16} },
-                    legend: { display: true },
+                    legend: { display: true, position: 'bottom' },
                     verticalLine: cutoff ? { x: cutoff } : false
                 },
                 scales: {
