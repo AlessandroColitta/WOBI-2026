@@ -20,8 +20,25 @@
             color: var(--text);
             line-height: 1.6;
             margin: 0;
-            padding: 20px;
+            padding: 0; /* Changed from 20px to 0 to allow banner to span full width */
         }
+        
+        /* New Top Banner Style */
+        .top-banner {
+            background-color: var(--primary);
+            color: #ffffff;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            margin-bottom: 20px;
+        }
+
         .container {
             max-width: 800px;
             margin: auto;
@@ -29,6 +46,7 @@
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 40px; /* Added margin-bottom for better spacing */
         }
         h1, h2, h3 { color: var(--primary); }
         h1 { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
@@ -62,6 +80,11 @@
     </style>
 </head>
 <body>
+
+<!-- TOP BANNER -->
+<div class="top-banner">
+    Dr. Alessandro Colitta, board-certified sleep medicine expert
+</div>
 
 <div class="container">
     <h1>World Business Forum 2026 - Sleep Quality Check</h1>
