@@ -4,12 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Valutazione del Sonno - WOBI 2026</title>
+    <!-- Libreria per i grafici -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #0056b3;
             --bg-color: #f4f7f6;
             --card-bg: #ffffff;
             --text: #333333;
+            --accent: #e74c3c;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -29,301 +32,344 @@
         }
         h1, h2, h3 { color: var(--primary); }
         h1 { text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .intro-text { text-align: center; margin-bottom: 30px; }
+        
+        /* Menu di selezione */
+        .selection-menu { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+        .btn-large { padding: 20px; font-size: 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .btn-large:hover { background: #004494; }
+
         .question { margin-bottom: 25px; padding: 15px; background: #f9f9f9; border-left: 4px solid var(--primary); border-radius: 4px; }
         label { display: block; margin-bottom: 8px; font-weight: bold; }
         .options label { display: block; font-weight: normal; margin-bottom: 5px; cursor: pointer; }
         input[type="time"], input[type="number"], input[type="text"] {
             width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box;
         }
-        button {
-            display: block; width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: background 0.3s;
+        button.submit-btn {
+            display: block; width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 18px; cursor: pointer; transition: 0.3s; margin-top: 20px;
         }
-        button:hover { background: #004494; }
-        .result-box {
-            display: none; margin-top: 30px; padding: 20px; background: #e7f3fe; border: 1px solid #b6d4fe; border-radius: 8px; text-align: center;
-        }
-        .score { font-size: 24px; font-weight: bold; color: var(--primary); }
+        button.submit-btn:hover { background: #218838; }
+        
+        .result-box { display: none; margin-top: 20px; padding: 20px; text-align: center; }
+        .alert-box { padding: 20px; border-radius: 8px; margin-top: 20px; font-size: 18px; }
+        .alert-warning { background: #fdf3d8; border: 1px solid #fce39e; color: #856404; }
+        .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        
+        .chart-container { margin-top: 30px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; }
+        canvas { max-width: 100%; }
+        
+        #form-container { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Questionario sulla Qualità del Sonno</h1>
-    <p style="text-align:center;">I dati raccolti sono completamente anonimi e non verranno salvati o condivisi.</p>
+    <h1>Centro Valutazione del Sonno</h1>
+    <p class="intro-text">I dati raccolti sono <strong>completamente anonimi</strong> e vengono utilizzati esclusivamente per generare statistiche aggregate all'interno di questo dispositivo.</p>
 
-    <form id="sleepForm">
-        
-        <!-- ================= ISI SECTION ================= -->
-        <h2>Insomnia Severity Index (ISI)</h2>
-        
-        <div class="question">
-            <label>1. Difficoltà ad addormentarsi</label>
-            <div class="options">
-                <label><input type="radio" name="isi1" value="0" required> Nessuna</label>
-                <label><input type="radio" name="isi1" value="1"> Lieve</label>
-                <label><input type="radio" name="isi1" value="2"> Media</label>
-                <label><input type="radio" name="isi1" value="3"> Grave</label>
-                <label><input type="radio" name="isi1" value="4"> Molto Grave</label>
+    <!-- SCHERMATA DI SELEZIONE -->
+    <div id="selection-screen">
+        <h2>Scegli il questionario da compilare:</h2>
+        <div class="selection-menu">
+            <button class="btn-large" onclick="startForm('ISI')">Compila solo Insomnia Severity Index (ISI)</button>
+            <button class="btn-large" onclick="startForm('PSQI')">Compila solo Pittsburgh Sleep Quality Index (PSQI)</button>
+            <button class="btn-large" onclick="startForm('BOTH')" style="background-color: #17a2b8;">Compila Entrambi</button>
+        </div>
+    </div>
+
+    <!-- CONTENITORE DEL MODULO -->
+    <div id="form-container">
+        <form id="sleepForm">
+            
+            <!-- ================= ISI SECTION ================= -->
+            <div id="isi-section">
+                <h2>Insomnia Severity Index (ISI)</h2>
+                
+                <div class="question"><label>1. Difficoltà ad addormentarsi</label><div class="options">
+                    <label><input type="radio" name="isi1" value="0"> Nessuna</label><label><input type="radio" name="isi1" value="1"> Lieve</label><label><input type="radio" name="isi1" value="2"> Media</label><label><input type="radio" name="isi1" value="3"> Grave</label><label><input type="radio" name="isi1" value="4"> Molto Grave</label>
+                </div></div>
+                <div class="question"><label>2. Difficoltà a restare addormentato</label><div class="options">
+                    <label><input type="radio" name="isi2" value="0"> Nessuna</label><label><input type="radio" name="isi2" value="1"> Lieve</label><label><input type="radio" name="isi2" value="2"> Media</label><label><input type="radio" name="isi2" value="3"> Grave</label><label><input type="radio" name="isi2" value="4"> Molto Grave</label>
+                </div></div>
+                <div class="question"><label>3. Risveglio troppo precoce</label><div class="options">
+                    <label><input type="radio" name="isi3" value="0"> Nessuna</label><label><input type="radio" name="isi3" value="1"> Lieve</label><label><input type="radio" name="isi3" value="2"> Media</label><label><input type="radio" name="isi3" value="3"> Grave</label><label><input type="radio" name="isi3" value="4"> Molto Grave</label>
+                </div></div>
+                <div class="question"><label>4. Quanto si sente soddisfatto/insoddisfatto del suo attuale sonno?</label><div class="options">
+                    <label><input type="radio" name="isi4" value="0"> Molto soddisfatto</label><label><input type="radio" name="isi4" value="1"> Soddisfatto</label><label><input type="radio" name="isi4" value="2"> Neutro</label><label><input type="radio" name="isi4" value="3"> Non molto soddisfatto</label><label><input type="radio" name="isi4" value="4"> Molto insoddisfatto</label>
+                </div></div>
+                <div class="question"><label>5. In quale misura ritiene che il problema di sonno interferisca con la sua efficienza diurna?</label><div class="options">
+                    <label><input type="radio" name="isi5" value="0"> Per nulla</label><label><input type="radio" name="isi5" value="1"> Un po'</label><label><input type="radio" name="isi5" value="2"> Abbastanza</label><label><input type="radio" name="isi5" value="3"> Molto</label><label><input type="radio" name="isi5" value="4"> Moltissimo</label>
+                </div></div>
+                <div class="question"><label>6. Quanto pensa che il suo problema di sonno sia evidente agli altri?</label><div class="options">
+                    <label><input type="radio" name="isi6" value="0"> Per nulla</label><label><input type="radio" name="isi6" value="1"> Un po'</label><label><input type="radio" name="isi6" value="2"> Abbastanza</label><label><input type="radio" name="isi6" value="3"> Molto</label><label><input type="radio" name="isi6" value="4"> Moltissimo</label>
+                </div></div>
+                <div class="question"><label>7. Quanto si sente preoccupato/stressato a causa del suo attuale problema di sonno?</label><div class="options">
+                    <label><input type="radio" name="isi7" value="0"> Per nulla</label><label><input type="radio" name="isi7" value="1"> Un po'</label><label><input type="radio" name="isi7" value="2"> Abbastanza</label><label><input type="radio" name="isi7" value="3"> Molto</label><label><input type="radio" name="isi7" value="4"> Moltissimo</label>
+                </div></div>
             </div>
-        </div>
-        
-        <div class="question">
-            <label>2. Difficoltà a restare addormentato</label>
-            <div class="options">
-                <label><input type="radio" name="isi2" value="0" required> Nessuna</label>
-                <label><input type="radio" name="isi2" value="1"> Lieve</label>
-                <label><input type="radio" name="isi2" value="2"> Media</label>
-                <label><input type="radio" name="isi2" value="3"> Grave</label>
-                <label><input type="radio" name="isi2" value="4"> Molto Grave</label>
-            </div>
-        </div>
 
-        <div class="question">
-            <label>3. Risveglio troppo precoce</label>
-            <div class="options">
-                <label><input type="radio" name="isi3" value="0" required> Nessuna</label>
-                <label><input type="radio" name="isi3" value="1"> Lieve</label>
-                <label><input type="radio" name="isi3" value="2"> Media</label>
-                <label><input type="radio" name="isi3" value="3"> Grave</label>
-                <label><input type="radio" name="isi3" value="4"> Molto Grave</label>
-            </div>
-        </div>
+            <!-- ================= PSQI SECTION ================= -->
+            <div id="psqi-section">
+                <h2>Pittsburgh Sleep Quality Index (PSQI)</h2>
+                <div class="question"><label>1. A che ora è andato/a a letto la sera?</label><input type="time" id="psqi1"></div>
+                <div class="question"><label>2. Quanto tempo (in minuti) ha impiegato ad addormentarsi?</label><input type="number" id="psqi2" min="0"></div>
+                <div class="question"><label>3. A che ora si è alzata/o al mattino?</label><input type="time" id="psqi3"></div>
+                <div class="question"><label>4. Quante ore ha dormito effettivamente la notte?</label><input type="number" id="psqi4" min="0" step="0.5"></div>
 
-        <div class="question">
-            <label>4. Quanto si sente soddisfatto/insoddisfatto del suo attuale sonno?</label>
-            <div class="options">
-                <label><input type="radio" name="isi4" value="0" required> Molto soddisfatto</label>
-                <label><input type="radio" name="isi4" value="1"> Soddisfatto</label>
-                <label><input type="radio" name="isi4" value="2"> Neutro</label>
-                <label><input type="radio" name="isi4" value="3"> Non molto soddisfatto</label>
-                <label><input type="radio" name="isi4" value="4"> Molto insoddisfatto</label>
-            </div>
-        </div>
+                <h3>Frequenza dei problemi (Ultimo mese):</h3>
+                <script>
+                    const psqi_freq_options = `
+                        <label><input type="radio" name="REPLACE_NAME" value="0"> Mai</label>
+                        <label><input type="radio" name="REPLACE_NAME" value="1"> < 1 volta a settimana</label>
+                        <label><input type="radio" name="REPLACE_NAME" value="2"> 1-2 volte a settimana</label>
+                        <label><input type="radio" name="REPLACE_NAME" value="3"> 3+ volte a settimana</label>
+                    `;
+                    const questions = [
+                        {id: 'psqi5', text: '5. Non riuscire ad addormentarsi entro 30 minuti'},
+                        {id: 'psqi6', text: '6. Svegliarsi nel mezzo della notte o al mattino presto senza riaddormentarsi'},
+                        {id: 'psqi7', text: '7. Alzarsi nel mezzo della notte per andare in bagno'},
+                        {id: 'psqi8', text: '8. Non riuscire a respirare bene'},
+                        {id: 'psqi9', text: '9. Tossire o russare forte'},
+                        {id: 'psqi10', text: '10. Sentire troppo freddo'},
+                        {id: 'psqi11', text: '11. Sentire troppo caldo'},
+                        {id: 'psqi12', text: '12. Fare brutti sogni'},
+                        {id: 'psqi13', text: '13. Avere dolori'}
+                    ];
+                    questions.forEach(q => {
+                        document.write(`<div class="question"><label>${q.text}</label><div class="options">${psqi_freq_options.replace(/REPLACE_NAME/g, q.id)}</div></div>`);
+                    });
+                </script>
 
-        <div class="question">
-            <label>5. In quale misura ritiene che il problema di sonno interferisca con la sua efficienza diurna?</label>
-            <div class="options">
-                <label><input type="radio" name="isi5" value="0" required> Per nulla</label>
-                <label><input type="radio" name="isi5" value="1"> Un po'</label>
-                <label><input type="radio" name="isi5" value="2"> Abbastanza</label>
-                <label><input type="radio" name="isi5" value="3"> Molto</label>
-                <label><input type="radio" name="isi5" value="4"> Moltissimo</label>
-            </div>
-        </div>
-
-        <div class="question">
-            <label>6. Quanto pensa che il suo problema di sonno sia evidente agli altri, in termini di peggioramento della qualità della sua vita?</label>
-            <div class="options">
-                <label><input type="radio" name="isi6" value="0" required> Per nulla</label>
-                <label><input type="radio" name="isi6" value="1"> Un po'</label>
-                <label><input type="radio" name="isi6" value="2"> Abbastanza</label>
-                <label><input type="radio" name="isi6" value="3"> Molto</label>
-                <label><input type="radio" name="isi6" value="4"> Moltissimo</label>
-            </div>
-        </div>
-
-        <div class="question">
-            <label>7. Quanto si sente preoccupato/stressato a causa del suo attuale problema di sonno?</label>
-            <div class="options">
-                <label><input type="radio" name="isi7" value="0" required> Per nulla</label>
-                <label><input type="radio" name="isi7" value="1"> Un po'</label>
-                <label><input type="radio" name="isi7" value="2"> Abbastanza</label>
-                <label><input type="radio" name="isi7" value="3"> Molto</label>
-                <label><input type="radio" name="isi7" value="4"> Moltissimo</label>
-            </div>
-        </div>
-
-        <!-- ================= PSQI SECTION ================= -->
-        <h2>Pittsburgh Sleep Quality Index (PSQI)</h2>
-
-        <div class="question">
-            <label>1. Nell'ultimo mese, di solito, a che ora è andato/a a letto la sera?</label>
-            <input type="time" id="psqi1" required>
-        </div>
-
-        <div class="question">
-            <label>2. Nell'ultimo mese, di solito, quanto tempo (in minuti) ha impiegato ad addormentarsi ogni notte?</label>
-            <input type="number" id="psqi2" min="0" required>
-        </div>
-
-        <div class="question">
-            <label>3. Nell'ultimo mese, di solito, a che ora si è alzata/o al mattino?</label>
-            <input type="time" id="psqi3" required>
-        </div>
-
-        <div class="question">
-            <label>4. Nell'ultimo mese, quante ore ha dormito effettivamente la notte?</label>
-            <input type="number" id="psqi4" min="0" step="0.5" required>
-        </div>
-
-        <h3>Nell'ultimo mese, quanto spesso ha avuto problemi a dormire per i seguenti motivi?</h3>
-        <!-- Generates PSQI 5 to 12 -->
-        <script>
-            const psqi_freq_options = `
-                <label><input type="radio" name="REPLACE_NAME" value="0" required> Mai durante il mese passato</label>
-                <label><input type="radio" name="REPLACE_NAME" value="1"> Meno di una volta a settimana</label>
-                <label><input type="radio" name="REPLACE_NAME" value="2"> Una o due volte a settimana</label>
-                <label><input type="radio" name="REPLACE_NAME" value="3"> Tre o più volte a settimana</label>
-            `;
-            const questions = [
-                {id: 'psqi5', text: '5. Non riuscire ad addormentarsi entro 30 minuti'},
-                {id: 'psqi6', text: '6. Svegliarsi nel mezzo della notte o al mattino presto senza riaddormentarsi'},
-                {id: 'psqi7', text: '7. Alzarsi nel mezzo della notte per andare in bagno'},
-                {id: 'psqi8', text: '8. Non riuscire a respirare bene'},
-                {id: 'psqi9', text: '9. Tossire o russare forte'},
-                {id: 'psqi10', text: '10. Sentire troppo freddo'},
-                {id: 'psqi11', text: '11. Sentire troppo caldo'},
-                {id: 'psqi12', text: '12. Fare brutti sogni'},
-                {id: 'psqi13', text: '13. Avere dolori'}
-            ];
-            questions.forEach(q => {
-                document.write(`
-                    <div class="question">
-                        <label>${q.text}</label>
-                        <div class="options">
-                            ${psqi_freq_options.replace(/REPLACE_NAME/g, q.id)}
-                        </div>
+                <div class="question">
+                    <label>14. Altri problemi che disturbano il sonno? (Opzionale)</label><input type="text" id="psqi14">
+                    <label style="margin-top:10px;">16. Quanto spesso ha avuto questo problema?</label>
+                    <div class="options">
+                        <label><input type="radio" name="psqi16" value="0" checked> Mai / Nessun altro problema</label>
+                        <label><input type="radio" name="psqi16" value="1"> < 1 volta a settimana</label>
+                        <label><input type="radio" name="psqi16" value="2"> 1-2 volte a settimana</label>
+                        <label><input type="radio" name="psqi16" value="3"> 3+ volte a settimana</label>
                     </div>
-                `);
-            });
-        </script>
+                </div>
 
-        <div class="question">
-            <label>14. C'è qualche altro problema che può aver disturbato il suo sonno?</label>
-            <input type="text" id="psqi14" placeholder="Opzionale">
-            <label style="margin-top:10px;">16. Quanto spesso ha avuto problemi a dormire per questo motivo?</label>
-            <div class="options">
-                <label><input type="radio" name="psqi16" value="0" checked required> Mai durante il mese passato / Nessun altro problema</label>
-                <label><input type="radio" name="psqi16" value="1"> Meno di una volta a settimana</label>
-                <label><input type="radio" name="psqi16" value="2"> Una o due volte a settimana</label>
-                <label><input type="radio" name="psqi16" value="3"> Tre o più volte a settimana</label>
+                <div class="question"><label>17. Valutazione complessiva qualità del sonno</label><div class="options">
+                    <label><input type="radio" name="psqi17" value="0"> Molto buona</label><label><input type="radio" name="psqi17" value="1"> Abbastanza buona</label><label><input type="radio" name="psqi17" value="2"> Abbastanza cattiva</label><label><input type="radio" name="psqi17" value="3"> Molto cattiva</label>
+                </div></div>
+
+                <div class="question"><label>18. Frequenza assunzione farmaci per dormire</label><div class="options">
+                    <label><input type="radio" name="psqi18" value="0"> Mai</label><label><input type="radio" name="psqi18" value="1"> < 1 a settimana</label><label><input type="radio" name="psqi18" value="2"> 1-2 a settimana</label><label><input type="radio" name="psqi18" value="3"> 3+ a settimana</label>
+                </div></div>
+
+                <div class="question"><label>19. Difficoltà a rimanere sveglio alla guida o in attività sociali</label><div class="options">
+                    <label><input type="radio" name="psqi19" value="0"> Mai</label><label><input type="radio" name="psqi19" value="1"> < 1 a settimana</label><label><input type="radio" name="psqi19" value="2"> 1-2 a settimana</label><label><input type="radio" name="psqi19" value="3"> 3+ a settimana</label>
+                </div></div>
+
+                <div class="question"><label>20. Problemi ad avere energie sufficienti per attività normali</label><div class="options">
+                    <label><input type="radio" name="psqi20" value="0"> Per niente</label><label><input type="radio" name="psqi20" value="1"> Solo un po'</label><label><input type="radio" name="psqi20" value="2"> Abbastanza</label><label><input type="radio" name="psqi20" value="3"> Molto</label>
+                </div></div>
             </div>
-        </div>
 
-        <div class="question">
-            <label>17. Nell'ultimo mese, come valuta complessivamente la sua qualità del sonno?</label>
-            <div class="options">
-                <label><input type="radio" name="psqi17" value="0" required> Molto buona</label>
-                <label><input type="radio" name="psqi17" value="1"> Abbastanza buona</label>
-                <label><input type="radio" name="psqi17" value="2"> Abbastanza cattiva</label>
-                <label><input type="radio" name="psqi17" value="3"> Molto cattiva</label>
-            </div>
-        </div>
+            <button type="button" class="btn-large" style="background:#6c757d; width:100%; margin-bottom:10px;" onclick="location.reload()">Indietro</button>
+            <button type="submit" class="submit-btn">Vedi i Risultati</button>
+        </form>
+    </div>
 
-        <div class="question">
-            <label>18. Nell'ultimo mese, quanto spesso ha preso farmaci per dormire?</label>
-            <div class="options">
-                <label><input type="radio" name="psqi18" value="0" required> Mai</label>
-                <label><input type="radio" name="psqi18" value="1"> Meno di una volta a settimana</label>
-                <label><input type="radio" name="psqi18" value="2"> Una o due volte a settimana</label>
-                <label><input type="radio" name="psqi18" value="3"> Tre o più volte a settimana</label>
-            </div>
-        </div>
-
-        <div class="question">
-            <label>19. Nell'ultimo mese, quanto spesso ha avuto difficoltà a rimanere sveglio/a alla guida o durante attività sociali?</label>
-            <div class="options">
-                <label><input type="radio" name="psqi19" value="0" required> Mai</label>
-                <label><input type="radio" name="psqi19" value="1"> Meno di una volta a settimana</label>
-                <label><input type="radio" name="psqi19" value="2"> Una o due volte a settimana</label>
-                <label><input type="radio" name="psqi19" value="3"> Tre o più volte a settimana</label>
-            </div>
-        </div>
-
-        <div class="question">
-            <label>20. Nell'ultimo mese, ha avuto problemi ad avere energie sufficienti per concludere le sue normali attività?</label>
-            <div class="options">
-                <label><input type="radio" name="psqi20" value="0" required> Per niente</label>
-                <label><input type="radio" name="psqi20" value="1"> Solo un po'</label>
-                <label><input type="radio" name="psqi20" value="2"> Abbastanza</label>
-                <label><input type="radio" name="psqi20" value="3"> Molto</label>
-            </div>
-        </div>
-
-        <button type="submit">Calcola Punteggi</button>
-    </form>
-
+    <!-- SCHERMATA DEI RISULTATI -->
     <div id="results" class="result-box">
-        <h2>Risultati</h2>
-        <p>Punteggio Totale ISI: <span id="isiTotal" class="score">0</span></p>
-        <p>Punteggio Totale PSQI: <span id="psqiTotal" class="score">0</span></p>
-        <button onclick="location.reload()" style="background:#6c757d; margin-top:20px;">Nuova Valutazione</button>
+        <h2>Risultati della Valutazione</h2>
+        <div id="score-details" style="font-size: 20px; font-weight: bold;"></div>
+        
+        <div id="clinical-message" class="alert-box"></div>
+
+        <div id="charts-area">
+            <div id="isi-chart-container" class="chart-container" style="display:none;">
+                <canvas id="isiCanvas"></canvas>
+            </div>
+            <div id="psqi-chart-container" class="chart-container" style="display:none;">
+                <canvas id="psqiCanvas"></canvas>
+            </div>
+        </div>
+
+        <button onclick="location.reload()" class="btn-large" style="width:100%; margin-top:30px;">Nuovo Partecipante</button>
     </div>
 
 </div>
 
 <script>
+    let activeMode = '';
+
+    // Gestisce la visibilità delle sezioni e l'obbligo dei campi
+    function startForm(mode) {
+        activeMode = mode;
+        document.getElementById('selection-screen').style.display = 'none';
+        document.getElementById('form-container').style.display = 'block';
+
+        const isiSection = document.getElementById('isi-section');
+        const psqiSection = document.getElementById('psqi-section');
+
+        if (mode === 'ISI') {
+            isiSection.style.display = 'block';
+            psqiSection.style.display = 'none';
+            setRequired(isiSection, true);
+            setRequired(psqiSection, false);
+        } else if (mode === 'PSQI') {
+            isiSection.style.display = 'none';
+            psqiSection.style.display = 'block';
+            setRequired(isiSection, false);
+            setRequired(psqiSection, true);
+        } else {
+            isiSection.style.display = 'block';
+            psqiSection.style.display = 'block';
+            setRequired(isiSection, true);
+            setRequired(psqiSection, true);
+        }
+    }
+
+    function setRequired(section, isRequired) {
+        const inputs = section.querySelectorAll('input');
+        inputs.forEach(input => {
+            if (input.id !== 'psqi14' && input.name !== 'psqi16') {
+                input.required = isRequired;
+            }
+        });
+    }
+
+    // Calcolo e salvataggio
     document.getElementById('sleepForm').addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        let isiTotal = null;
+        let psqiTotal = null;
+        let hasSleepProblem = false;
 
-        // --- ISI CALCULATION ---
-        let isiTotal = 0;
-        for (let i = 1; i <= 7; i++) {
-            isiTotal += parseInt(document.querySelector(`input[name="isi${i}"]:checked`).value);
+        // CALCOLO ISI
+        if (activeMode === 'ISI' || activeMode === 'BOTH') {
+            isiTotal = 0;
+            for (let i = 1; i <= 7; i++) {
+                isiTotal += parseInt(document.querySelector(`input[name="isi${i}"]:checked`).value);
+            }
+            if (isiTotal >= 8) hasSleepProblem = true; // Cutoff insonnia lieve+
+            
+            // Salva nel database locale
+            let isiHistory = JSON.parse(localStorage.getItem('wobi_isi_history')) || [];
+            isiHistory.push(isiTotal);
+            localStorage.setItem('wobi_isi_history', JSON.stringify(isiHistory));
         }
 
-        // --- PSQI CALCULATION (Based strictly on provided R logic) ---
-        
-        // Component 1 (PSQI 17)
-        let comp1 = parseInt(document.querySelector('input[name="psqi17"]:checked').value);
+        // CALCOLO PSQI
+        if (activeMode === 'PSQI' || activeMode === 'BOTH') {
+            let comp1 = parseInt(document.querySelector('input[name="psqi17"]:checked').value);
+            let psqi2_min = parseInt(document.getElementById('psqi2').value);
+            let psqi2_score = psqi2_min < 16 ? 0 : (psqi2_min < 31 ? 1 : (psqi2_min < 61 ? 2 : 3));
+            let psqi5_score = parseInt(document.querySelector('input[name="psqi5"]:checked').value);
+            let comp2_sum = psqi2_score + psqi5_score;
+            let comp2 = comp2_sum === 0 ? 0 : (comp2_sum <= 2 ? 1 : (comp2_sum <= 4 ? 2 : 3));
+            let psqi4_hrs = parseFloat(document.getElementById('psqi4').value);
+            let comp3 = psqi4_hrs >= 7 ? 0 : (psqi4_hrs >= 6 ? 1 : (psqi4_hrs >= 5 ? 2 : 3));
 
-        // Component 2 (PSQI 2 & PSQI 5)
-        let psqi2_min = parseInt(document.getElementById('psqi2').value);
-        let psqi2_score = psqi2_min < 16 ? 0 : (psqi2_min < 31 ? 1 : (psqi2_min < 61 ? 2 : 3));
-        let psqi5_score = parseInt(document.querySelector('input[name="psqi5"]:checked').value);
-        let comp2_sum = psqi2_score + psqi5_score;
-        let comp2 = comp2_sum === 0 ? 0 : (comp2_sum <= 2 ? 1 : (comp2_sum <= 4 ? 2 : 3));
+            let parseTimeDec = (timeStr) => { let p = timeStr.split(':'); return parseInt(p[0]) + (parseInt(p[1]) / 60); };
+            let onsetDec = parseTimeDec(document.getElementById('psqi1').value);
+            let offsetDec = parseTimeDec(document.getElementById('psqi3').value);
+            let tib = onsetDec < 15 ? (offsetDec - onsetDec) : (offsetDec + (24 - onsetDec));
+            let sse = tib > 0 ? (psqi4_hrs / tib) : 0;
+            if (sse > 1) sse = 1;
+            let comp4 = sse >= 0.85 ? 0 : (sse >= 0.75 ? 1 : (sse >= 0.65 ? 2 : 3));
 
-        // Component 3 (PSQI 4)
-        let psqi4_hrs = parseFloat(document.getElementById('psqi4').value);
-        let comp3 = psqi4_hrs >= 7 ? 0 : (psqi4_hrs >= 6 ? 1 : (psqi4_hrs >= 5 ? 2 : 3));
+            let comp5_sum = 0;
+            [5,6,7,8,9,10,11,12,16].forEach(n => { comp5_sum += parseInt(document.querySelector(`input[name="psqi${n}"]:checked`).value); });
+            let comp5 = comp5_sum === 0 ? 0 : (comp5_sum < 10 ? 1 : (comp5_sum < 19 ? 2 : 3));
+            let comp6 = parseInt(document.querySelector('input[name="psqi18"]:checked').value);
+            let comp7_sum = parseInt(document.querySelector('input[name="psqi19"]:checked').value) + parseInt(document.querySelector('input[name="psqi20"]:checked').value);
+            let comp7 = comp7_sum === 0 ? 0 : (comp7_sum <= 2 ? 1 : (comp7_sum <= 4 ? 2 : 3));
 
-        // Component 4 (Sleep Efficiency)
-        let onsetTime = document.getElementById('psqi1').value;
-        let offsetTime = document.getElementById('psqi3').value;
-        
-        // Time string to decimal hours (matching R logic)
-        let parseTimeDec = (timeStr) => {
-            let parts = timeStr.split(':');
-            return parseInt(parts[0]) + (parseInt(parts[1]) / 60);
-        };
-        
-        let onsetDec = parseTimeDec(onsetTime);
-        let offsetDec = parseTimeDec(offsetTime);
-        
-        let tib = onsetDec < 15 ? (offsetDec - onsetDec) : (offsetDec + (24 - onsetDec));
-        let sse = tib > 0 ? (psqi4_hrs / tib) : 0;
-        if (sse > 1) sse = 1; // Cap at 100% just like R code
-        
-        let comp4 = sse >= 0.85 ? 0 : (sse >= 0.75 ? 1 : (sse >= 0.65 ? 2 : 3));
+            psqiTotal = comp1 + comp2 + comp3 + comp4 + comp5 + comp6 + comp7;
+            if (psqiTotal > 5) hasSleepProblem = true; // Cutoff PSQI
 
-        // Component 5 (Sum of 5,6,7,8,9,10,11,12,16)
-        let comp5_sum = 0;
-        const psqi_comp5_items = [5, 6, 7, 8, 9, 10, 11, 12, 16];
-        psqi_comp5_items.forEach(num => {
-            comp5_sum += parseInt(document.querySelector(`input[name="psqi${num}"]:checked`).value);
-        });
-        let comp5 = comp5_sum === 0 ? 0 : (comp5_sum < 10 ? 1 : (comp5_sum < 19 ? 2 : 3));
+            // Salva nel database locale
+            let psqiHistory = JSON.parse(localStorage.getItem('wobi_psqi_history')) || [];
+            psqiHistory.push(psqiTotal);
+            localStorage.setItem('wobi_psqi_history', JSON.stringify(psqiHistory));
+        }
 
-        // Component 6 (PSQI 18)
-        let comp6 = parseInt(document.querySelector('input[name="psqi18"]:checked').value);
+        mostraRisultati(isiTotal, psqiTotal, hasSleepProblem);
+    });
 
-        // Component 7 (PSQI 19 & 20)
-        let psqi19 = parseInt(document.querySelector('input[name="psqi19"]:checked').value);
-        let psqi20 = parseInt(document.querySelector('input[name="psqi20"]:checked').value);
-        let comp7_sum = psqi19 + psqi20;
-        let comp7 = comp7_sum === 0 ? 0 : (comp7_sum <= 2 ? 1 : (comp7_sum <= 4 ? 2 : 3));
-
-        // Total PSQI
-        let psqiTotal = comp1 + comp2 + comp3 + comp4 + comp5 + comp6 + comp7;
-
-        // --- DISPLAY RESULTS ---
-        document.getElementById('sleepForm').style.display = 'none';
-        document.getElementById('isiTotal').innerText = isiTotal;
-        document.getElementById('psqiTotal').innerText = psqiTotal;
+    function mostraRisultati(isi, psqi, problem) {
+        document.getElementById('form-container').style.display = 'none';
         document.getElementById('results').style.display = 'block';
         window.scrollTo(0, 0);
-    });
+
+        // Testo del punteggio
+        let htmlText = "";
+        if (isi !== null) htmlText += `<p>Punteggio ISI: <span style="color:var(--primary); font-size:28px;">${isi}</span></p>`;
+        if (psqi !== null) htmlText += `<p>Punteggio PSQI: <span style="color:var(--primary); font-size:28px;">${psqi}</span></p>`;
+        document.getElementById('score-details').innerHTML = htmlText;
+
+        // Messaggio Clinico
+        let msgBox = document.getElementById('clinical-message');
+        if (problem) {
+            msgBox.className = "alert-box alert-warning";
+            msgBox.innerHTML = "<strong>Attenzione:</strong> I risultati indicano che potresti soffrire di disturbi del sonno che alterano la qualità del tuo riposo. <br><br><em>Ti suggeriamo di consultare un medico specialista in medicina del sonno per un'ulteriore valutazione e per scoprire le opzioni per migliorare la tua salute.</em>";
+        } else {
+            msgBox.className = "alert-box alert-success";
+            msgBox.innerHTML = "Ottimo! I tuoi risultati non indicano problemi clinici di sonno significativi. Continua a mantenere le tue buone abitudini legate al riposo.";
+        }
+
+        // Grafici
+        if (isi !== null) {
+            document.getElementById('isi-chart-container').style.display = 'block';
+            let data = JSON.parse(localStorage.getItem('wobi_isi_history')) || [];
+            disegnaGrafico('isiCanvas', data, isi, 'Distribuzione ISI tra i Partecipanti', 
+                           [{m:7, l:'0-7 (Assente)'}, {m:14, l:'8-14 (Lieve)'}, {m:21, l:'15-21 (Moderata)'}, {m:28, l:'22-28 (Grave)'}]);
+        }
+        if (psqi !== null) {
+            document.getElementById('psqi-chart-container').style.display = 'block';
+            let data = JSON.parse(localStorage.getItem('wobi_psqi_history')) || [];
+            disegnaGrafico('psqiCanvas', data, psqi, 'Distribuzione PSQI tra i Partecipanti', 
+                           [{m:5, l:'0-5 (Buona)'}, {m:10, l:'6-10 (Scarsa)'}, {m:15, l:'11-15 (Pessima)'}, {m:21, l:'16-21 (Grave)'}]);
+        }
+    }
+
+    function disegnaGrafico(canvasId, dataset, currentScore, title, bins) {
+        let freqs = new Array(bins.length).fill(0);
+        let myIndex = -1;
+
+        // Raggruppa i dati storici
+        dataset.forEach(score => {
+            for(let i=0; i<bins.length; i++) {
+                if (score <= bins[i].m) { freqs[i]++; break; }
+            }
+        });
+
+        // Trova il bucket del giocatore corrente
+        for(let i=0; i<bins.length; i++) {
+            if (currentScore <= bins[i].m) { myIndex = i; break; }
+        }
+
+        // Colora la barra corrente in Rosso (accent)
+        let colors = freqs.map((_, i) => i === myIndex ? '#e74c3c' : '#0056b3');
+
+        new Chart(document.getElementById(canvasId).getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: bins.map(b => b.l),
+                datasets: [{
+                    label: 'Numero di Businessmen',
+                    data: freqs,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    title: { display: true, text: title + ' (Tu sei in ROSSO)', font: {size: 16} },
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    }
 </script>
 
 </body>
