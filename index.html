@@ -215,7 +215,7 @@
         </div>
 
         <div style="margin-top: 40px; margin-bottom: 20px;">
-            <p style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--primary);">Scan to visit my webpage (LinkedIn page, academic publications, and more!):</p>
+            <p style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--primary);">Scan to visit Dr. Alessandro Colitta's webpage (LinkedIn profile, academic publications, and more!):</p>
             <img src="qr-code.png" alt="QR Code to Dr. Alessandro Colitta webpage" style="width: 150px; height: 150px; border: 4px solid white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         </div>
 
@@ -376,7 +376,7 @@
         let msgBox = document.getElementById('clinical-message');
         if (problem) {
             msgBox.className = "alert-box alert-warning";
-            msgBox.innerHTML = "<strong>Attention:</strong> Your results indicate that you may suffer from sleep disturbances that are altering the quality of your rest. <br><br><em>Consult a sleep medicine specialist for further evaluation.</em>";
+            msgBox.innerHTML = "You may experience sleep disturbances that negatively impact your sleep health. <br><br><em>Consult a sleep medicine specialist for further evaluation.</em>";
         } else {
             msgBox.className = "alert-box alert-success";
             msgBox.innerHTML = "Great! Keep up your good sleep habits.";
@@ -409,7 +409,7 @@
         dataset.forEach(score => {
             for(let i=0; i<bins.length; i++) {
                 if (score <= bins[i].m) { freqs[i]++; break; }
-            }
+            }F
         });
 
         // Find current user's bucket
